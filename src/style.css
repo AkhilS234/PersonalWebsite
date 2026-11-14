@@ -120,3 +120,17 @@ h2{font-size:15px}h3,.project h3{font-family:var(--body);font-size:19px;font-wei
  .diagram-panel summary{transition:background .2s}.diagram-panel summary:hover{background:#dce4ec}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.motion-reveal{opacity:1;transform:none;transition:none}.chapter-nav>a,.learn-more,.contact-links a{transition:none}}
+
+/* Bring the introduction into the first screen and align it with the laptop. */
+header{padding-top:22px;padding-bottom:22px}
+.intro{min-height:0;padding:24px 0 48px;align-items:start;gap:48px;grid-template-columns:.9fr 1.3fr}
+.intro-copy{padding-top:32px}
+.intro .kicker{font-size:11px;margin-bottom:18px;letter-spacing:1.8px}
+.intro h1{margin-bottom:24px}
+.intro-description{margin-bottom:0}
+.intro-links:empty{display:none}
+.intro .workspace{align-self:start}
+.intro .desk-scene{aspect-ratio:1.24}
+@media(max-width:1050px) and (min-width:761px){.intro{gap:30px;grid-template-columns:.9fr 1.2fr}.intro-copy{padding-top:20px}}
+@media(max-width:760px){.intro{grid-template-columns:1fr;padding:16px 0 36px;gap:24px}.intro-copy{padding-top:0;max-width:510px}.intro h1{font-size:clamp(54px,10vw,76px)}.intro .workspace{width:100%;max-width:570px}.intro .desk-scene{aspect-ratio:1.18}}
+@media(max-width:450px){header{padding-top:18px;padding-bottom:18px}.intro{padding-top:12px;gap:18px}.intro .desk-scene{aspect-ratio:.9}}
