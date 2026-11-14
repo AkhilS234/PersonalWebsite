@@ -13,7 +13,7 @@ export const portfolio = {
     {
         "company": "MetaFloor.ai",
         "role": "Applied AI Engineer Intern",
-        "period": "June 2026 – Present",
+        "period": "June 2026 – October 2026",
         "bullets": [
             "Designed a two-layer LangGraph platform for 36 manufacturing and supply-chain decisions: one orchestrator splits requests into up to five parallel use-case jobs, with human review of both the split and each proposed plan.",
             "Built reliability around Postgres job leases, per-thread advisory locks, first-decision-wins approvals, versioned checkpoints and deterministic ERP write verification; the October 2026 write-up reports 900 passing tests.",
@@ -33,7 +33,7 @@ export const portfolio = {
   projects: [
 {
     "title": "Human-in-the-Loop Agent Platform for Manufacturing",
-    "period": "MetaFloor.ai · June 2026 – Present",
+    "period": "MetaFloor.ai · June 2026 – October 2026",
     "category": "Featured engineering case study",
     "bullets": [
         "Turns plain-language requests into human-approved, verified ERP changes across a catalog of 36 manufacturing and supply-chain decisions.",
