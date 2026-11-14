@@ -96,3 +96,5 @@ h2{font-size:15px}h3,.project h3{font-family:var(--body);font-size:19px;font-wei
 .chapter-topic p strong,.chapter-list strong{font-weight:inherit}
 .results-scroll tbody tr:last-child{font-weight:400}
 .results-scroll tbody th{font-weight:400}
+
+.contact-links{flex-direction:column;align-items:flex-start;gap:14px}
