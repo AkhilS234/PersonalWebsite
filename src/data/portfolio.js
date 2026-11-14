@@ -6,8 +6,8 @@ export const portfolio = {
   // TODO: Add confirmed email, public profiles, and résumé URL. Unset links are hidden.
   links: { email: 'akhil.vishnubhotla1@gmail.com', github: '', linkedin: '', resume: '' },
   // TODO: Confirm all draft biography, education, experience and project descriptions before public sharing.
-  about: ["I’m an applied AI engineer studying Computer Science and Mathematics at Rutgers University. I build AI systems that connect models to real workflows, with a focus on the engineering that makes them reliable: evaluation, backend infrastructure, and human oversight.", "At MetaFloor.ai, I build multi-agent systems for supply-chain decisions. Previously, at Biomet.life, I worked on extracting information from sustainability reports and using it to improve emissions forecasts. My projects range from CUDA attention kernels to vision-language models and financial sentiment backtesting. I like working across the stack, from how a model runs to how people use it."],
-  education: 'Rutgers University — Computer Science & Mathematics',
+  about: ["Hi! My name is Akhil and I'm a junior at Rutgers studying Computer Science. My passions include applied artificial intelligence, machine learning, and software engineering."],
+  education: 'Rutgers University — Computer Science',
   skills: ['Software engineering', 'Applied AI / ML', 'Full-stack systems', 'Product-minded development'],
   experience: [
     {
