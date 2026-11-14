@@ -6,7 +6,7 @@ export const portfolio = {
   // TODO: Add confirmed email, public profiles, and résumé URL. Unset links are hidden.
   links: { email: 'akhil.vishnubhotla1@gmail.com', github: '', linkedin: '', resume: '' },
   // TODO: Confirm all draft biography, education, experience and project descriptions before public sharing.
-  about: ["Hi! My name is Akhil and I'm a junior at Rutgers studying Computer Science. My passions include applied artificial intelligence, machine learning, and software engineering."],
+  about: ["Hi! My name is Akhil and I'm a junior at Rutgers studying Computer Science. My passions include applied artificial intelligence, machine learning, and software engineering.", "Most recently I was an Applied AI intern at MetaFloor where I architected and developed an agent workflow to handle supply chain disruptions for manufacturing companies."],
   education: 'Rutgers University — Computer Science',
   skills: ['Software engineering', 'Applied AI / ML', 'Full-stack systems', 'Product-minded development'],
   experience: [
