@@ -271,20 +271,44 @@ export const portfolio = {
             "Contrastive learning",
             "Vision-language models"
         ],
-        "url": "",
+        "url": "https://github.com/AkhilS234/MedicalVLM",
         "slug": "medclip-tb",
-        "summary": "A vision-language model pairing chest X-rays with radiology reports for zero-shot tuberculosis classification.",
+        "summary": "A contrastive vision-language model that pairs chest X-rays with reports for retrieval and zero-shot TB classification.",
         "details": [
             {
-                "title": "Model and approach",
+                "title": "Learning from images and language",
                 "paragraphs": [
-                    "Built a CLIP-style vision-language model pairing a ResNet-18 image encoder with a DistilBERT text encoder, trained contrastively on chest X-rays and radiology reports for zero-shot TB classification without class labels"
+                    "Instead of training a classifier directly on TB labels, I explored whether matching chest X-rays with their clinical descriptions could teach a model useful visual representations. The project uses 800 frontal radiographs from the Montgomery County and Shenzhen Hospital screening datasets.",
+                    "Each image is paired with a caption derived from clinical readings. Training brings matching image-text pairs together in a shared space and pushes mismatched pairs apart. At evaluation time, an image can be compared with natural-language descriptions of normal and tuberculosis findings, without fitting a separate classification head."
                 ]
             },
             {
-                "title": "Reported results",
+                "title": "Model and training",
                 "paragraphs": [
-                    "Reached 94% accuracy (F1 0.94) on 800 radiographs and 79% Recall@10 on image-to-report retrieval"
+                    "The image encoder is an ImageNet-pretrained ResNet-18 with its classification head removed, producing 512-dimensional features. DistilBERT supplies a 768-dimensional text representation. Projection heads map both to a shared 256-dimensional embedding space.",
+                    "Training uses symmetric image-to-text and text-to-image cross-entropy loss with a learnable temperature. The documented setup runs for 15 epochs with AdamW, weight decay of 0.01 and a OneCycleLR schedule. The repository separates metadata generation, dataset loading, model definition, training and evaluation."
+                ]
+            },
+            {
+                "title": "Why the captions mattered",
+                "paragraphs": [
+                    "The report describes an experiment replacing generic captions with patient-specific descriptions that included clinical findings, sex and age. Recall@5 increased from 11.6% to 57%, while prompt-based classification accuracy increased from 82% to 92%.",
+                    "For this small dataset, improving the language paired with each image was an important part of improving the training signal. Exact report retrieval remains harder when several patients have similar findings and captions."
+                ]
+            },
+            {
+                "title": "Reading the reported results",
+                "paragraphs": [
+                    "The repository README reports 94% zero-shot classification accuracy across 800 images, with F1 of 0.94 for both classes. Its retrieval table reports Recall@1 of 11.9%, Recall@5 of 39.3%, Recall@10 of 58.5%, mean reciprocal rank of 0.272 and median rank of 8.",
+                    "The PDF reports a different retrieval result: Recall@5 of 57%, Recall@10 of 79.37%, mean reciprocal rank of 0.3786 and median rank of 5. Its narrative reports 92% classification accuracy, while its confusion-matrix counts total 751 correct predictions out of 800 (93.875%). These figures are presented separately because the sources do not establish a single matching run.",
+                    "Here, zero-shot refers to classifying with text prompts instead of a task-specific classification head. It does not by itself establish performance on unseen patients or an independent clinical test set."
+                ]
+            },
+            {
+                "title": "What comes next",
+                "paragraphs": [
+                    "The 800-image dataset is a limited basis for assessing generalization. The report identifies population diversity, dataset-specific patterns and the lack of external validation as limitations. This is a research project, with clinical usefulness still requiring separate evidence.",
+                    "Further work would include a clearly documented patient-level evaluation split, larger and more diverse datasets, medical-domain image encoders and extension to additional findings. Reconciling the published metrics with saved checkpoints and evaluation outputs would also make the results easier to reproduce."
                 ]
             }
         ]
