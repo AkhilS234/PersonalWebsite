@@ -350,18 +350,6 @@ export const portfolio = {
                 ]
             }
         ]
-    },
-    {
-        "title": "GHGPredictor",
-        "period": "Biomet.life · June – August 2025",
-        "summary": "Combines sustainability-report sentiment with historical company data to forecast emissions per vehicle.",
-        "page": "/experience/biomet",
-        "url": "https://github.com/AkhilS234/GHGPredictor",
-        "tags": [
-            "Python",
-            "scikit-learn",
-            "Flask"
-        ]
     }
 ]
 };
