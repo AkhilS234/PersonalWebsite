@@ -4,7 +4,7 @@ export const portfolio = {
   subheadline: 'Software engineer building thoughtful tools at the intersection of technology and real-world problems.',
   supporting: 'From complex workflows to meaningful insights, I like making the complicated feel simple.',
   // TODO: Add confirmed email, public profiles, and résumé URL. Unset links are hidden.
-  links: { email: 'akhil.vishnubhotla1@gmail.com', github: 'https://github.com/AkhilS234', linkedin: 'https://www.linkedin.com/in/akhil-s-vishnubhotla/', resume: '' },
+  links: { email: 'akhil.vishnubhotla1@gmail.com', github: 'https://github.com/AkhilS234', linkedin: 'https://www.linkedin.com/in/akhil-s-vishnubhotla/', resume: '/resume.pdf' },
   // TODO: Confirm all draft biography, education, experience and project descriptions before public sharing.
   about: ["Hi! My name is Akhil and I'm a junior at Rutgers studying Computer Science. My passions include applied artificial intelligence, machine learning, and software engineering.", "Most recently I was an Applied AI intern at MetaFloor where I architected and developed an agent workflow to handle supply chain disruptions for manufacturing companies.", "My applied AI engineering skills include building agent workflows with LangGraph and LangChain, developing retrieval-augmented generation (RAG) pipelines, and designing evaluation harnesses to test agent accuracy, safety, and reliability. I also work with Python, FastAPI, and Postgres to build the backend systems that support these workflows."],
   education: 'Rutgers University — Computer Science',

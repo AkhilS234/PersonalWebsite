@@ -136,3 +136,5 @@ header{padding-top:22px;padding-bottom:22px}
 @media(max-width:450px){header{padding-top:18px;padding-bottom:18px}.intro{padding-top:12px;gap:18px}.intro .desk-scene{aspect-ratio:.9}}
 
 .social-icons{display:flex;gap:12px;margin-top:24px}.social-icons a{display:grid;place-items:center;width:44px;height:44px;color:var(--ink);border-radius:8px;transition:color .2s,background .2s,transform .2s}.social-icons svg{width:25px;height:25px}.social-icons a:hover{color:var(--accent);background:#526c5510;transform:translateY(-2px)}@media(prefers-reduced-motion:reduce){.social-icons a{transition:none}.social-icons a:hover{transform:none}}
+
+.social-icons{align-items:center;flex-wrap:wrap}.social-icons .resume-link{width:auto;padding:0 12px;margin-left:6px;font:500 15px/1.4 var(--body);white-space:nowrap}@media(max-width:600px){header nav{gap:14px;flex-wrap:wrap;justify-content:flex-end}header{gap:20px}}
