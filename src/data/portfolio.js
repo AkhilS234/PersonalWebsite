@@ -31,195 +31,195 @@ export const portfolio = {
     }
 ],
   projects: [
-{
-    "title": "Human-in-the-Loop Agent Platform for Manufacturing",
-    "period": "MetaFloor.ai · June 2026 – October 2026",
-    "category": "Featured engineering case study",
-    "bullets": [
-        "Turns plain-language requests into human-approved, verified ERP changes across a catalog of 36 manufacturing and supply-chain decisions.",
-        "Separates model judgment from deterministic validation, conflict detection, execution and read-back verification. Two human checkpoints protect routing and execution.",
-        "900 passing tests reported; 10/45 held-out runs passed every hard gate after a grader audit. Synthetic validation is documented alongside the remaining deployment gaps."
-    ],
-    "tags": [
-        "Python",
-        "LangGraph",
-        "FastAPI",
-        "Postgres",
-        "ERPNext",
-        "pytest / Playwright"
-    ],
-    "url": "",
-    "caseStudy": {
-    "intro": "A manufacturing planner might ask: “The CNC line is overloaded and a supplier is late. What should we change?” Answering that means looking across schedules, inventory and orders, and getting the changes right. I built this platform to help a planner work through those decisions, review the proposed plan and check that the approved changes actually reached the ERP.",
-    "sections": [
-        {
-            "title": "From a request to a reviewed plan",
-            "paragraphs": [
-                "A request like that rarely maps to one decision. Balancing the CNC line and responding to a late part may need different information, and their plans may affect each other. The first job is to work out what the person is asking for, before spending time solving the wrong problem.",
-                "I use an orchestrator to break the request into up to five tasks and identify which ones depend on others. A person reviews that split first. They can edit it, ask for a revision or reject it. Only after approval do the individual use-case agents start working.",
-                "Each agent gathers the relevant ERP data, develops options and brings a plan back for review. Before those plans reach the reviewer, code checks whether they clash—for example, whether two plans are trying to use the same stock or work-center capacity. The person can approve or revise each part separately, so one problem does not have to hold up everything else.",
-                "Once approved, the parts run in dependency order. Code carries out the supported ERP writes and reads the records back to check the result. For actions that still need a person, the run pauses and waits for them. That distinction matters: proposing a useful plan and proving that it happened are two different jobs."
-            ]
-        },
-        {
-            "title": "Keeping the moving parts manageable",
-            "paragraphs": [
-                "I initially considered adding a layer of domain specialists between the orchestrator and the use-case agents. But those specialists mostly repeated the routing work. With 36 decisions in the catalog, one orchestrator could see the whole catalog in a single prompt. Two layers were enough.",
-                "I also wanted a simple request and a compound request to follow the same path. A request with one task is just a smaller version of a request with several. That keeps routing, approval and evaluation consistent instead of giving me two systems to maintain.",
-                "Underneath that flow, the API accepts the request and saves it to Postgres. Separate workers pick up the jobs and run the agents. A model call or a wait for human approval therefore does not need to keep an API request open. Postgres holds the queue, paused graph state, approvals and audit history, keeping the coordination close to the records it protects.",
-                "The same approach shaped smaller choices. Compliance search only needed roughly 120 cited regulation chunks, so I used TF-IDF retrieval rather than adding a vector database. And when execution fails halfway through, the system stops for human recovery. Automatically undoing an ERP change could be worse if someone has already acted on it."
-            ]
-        },
-        {
-            "title": "What happens when a run has to wait?",
-            "paragraphs": [
-                "A demo can run from start to finish in one sitting. A real approval might sit for days. By the time someone returns to it, a worker may have restarted, the ERP data may have changed, or I may have deployed new code. I needed a paused run to survive those interruptions without quietly changing what it meant.",
-                "Each use-case agent follows a LangGraph workflow: detect the use case, assemble the data, develop options, ask for approval, then act. The model works inside the options step. At a human gate, LangGraph saves a checkpoint to Postgres; a worker can later resume it with the person’s decision.",
-                "Saving the graph is only part of the problem. Two workers must not pick up the same job, and two approvals must not race into contradictory actions. Workers claim jobs using SKIP LOCKED and renew a heartbeat lease while they work. A separate lock protects each graph thread, while approval decisions follow a first-decision-wins rule. Changing a decision is an explicit, audited action allowed only before execution.",
-                "I also check what may have changed outside the run. Approvals can expire, shared resources are checked against other requests, and writes carry idempotency keys to prevent duplication on resume. Checkpoints record the code version and hashes of the prompts, rules and tools. If those no longer match, the run refuses to continue under different assumptions.",
-                "These safeguards came from concrete failures. LangGraph silently dropped state fields I had not declared, including a verification result and a flag meant to limit retries. A pooled database connection could also retain an advisory lock after an exception. I added tests for undeclared state writes and a connection-reset hook that releases leftover locks."
-            ]
-        },
-        {
-            "title": "An approval is not proof of completion",
-            "paragraphs": [
-                "There is another pause that is easy to overlook: the wait for a person to do the work. Only four of the 36 catalog use cases have an executor that can carry out the approved ERP change automatically. For the others, clicking “approved” is still a long way from “finished.”",
-                "I made the expected change explicit. Each plan has a proposed_writes contract identifying the record, field, old value and intended new value. Code reads the starting value from the ERP and checks it again before review, so the model cannot invent what was there or act on a stale premise.",
-                "After the action, the verifier reads the ERP and compares the result with that contract. A person’s completion report is useful audit information, but it does not decide whether the write succeeded. If the outcome cannot be checked, it stays human_reported_unverified.",
-                "Testing that distinction caught three partial, missing or incorrect human actions. It also exposed a shipment-screening path that released lines with unknown export classifications without compliance sign-off. Those were the kinds of failures I wanted the surrounding system to catch, even when the agent or reviewer sounded confident."
-            ]
-        },
-        {
-            "title": "How I tested whether the plans were any good",
-            "paragraphs": [
-                "Once the workflow could carry a request through approval and execution, I needed to know whether its decisions deserved approval in the first place. A fluent explanation was not enough. I wanted scenarios where I could work out the answer independently and compare the agent’s choice against it.",
-                "I built seeded synthetic generators for 35 runnable use cases. Each generator covers obvious decisions, close calls, edge cases, tempting traps and messy inputs. Some answers are computed independently; others are known because of how the scenario is constructed. A separate checker recomputes them from the raw data, and the agent never sees the answer key.",
-                "The grader checks the decision, constraints, required warnings and traps. Certain failures override everything else: taking an unsafe action, falling for a trap or stating a number that cannot be traced to the inputs or a successful tool result. An LLM judge can comment on writing quality, but it does not decide whether a run passes.",
-                "I tested the human interactions too. Scripted reviewers use the real approval path to approve, reject, revise, return late or report partially completed work. That lets me check whether the system handles the interaction correctly as well as whether its original plan was good.",
-                "Across the five priority use cases, I built 109 development scenarios and ran two real-model evaluations, plus scripted human-review scenarios and a compound request through the app.",
-                "**The bar is strict on purpose.** A run fails if it takes a trap, executes an unsafe action, misses a required warning, or states any number that can’t be traced to the inputs or a tool output. That applies even when the decision itself was right."
-            ]
-        },
-        {
-            "title": "First evaluation: right decisions, invented numbers",
-            "paragraphs": [
-                "The first real-model run passed 10 of 45 runs on every gate (22%). The model usually chose sensible actions, but it failed on numerical grounding: in 20 of the 35 failures, the main cause was the model stating a number it had calculated instead of one a tool gave it.",
-                "Two audits came before any fix.",
-                "**I audited the grader.** The first grader had passed only 2 of 45 runs. I traced all 305 fabrication flags back to the saved runs, and 248 were false positives: digits inside record IDs, display rounding, and arithmetic correctly derived from tool outputs. I fixed those cases without loosening the gates and kept the 57 genuine fabrications as regression tests. Rescoring produced the 10/45.",
-                "**I audited the test set.** An ID-blind comparison, which ignores names, IDs and dates and compares the actual numbers and structure, showed that 44 of the 45 first-evaluation runs used problems that duplicated development scenarios under new labels. The first evaluation wasn’t truly held out. I fixed the generators so every seed produces a genuinely different problem, and confirmed that the old seeds still reproduce the old sets byte for byte.",
+    {
+        "title": "Human-in-the-Loop Agent Platform for Manufacturing",
+        "period": "MetaFloor.ai · June 2026 – October 2026",
+        "category": "Featured engineering case study",
+        "bullets": [
+            "Turns plain-language requests into human-approved, verified ERP changes across a catalog of 36 manufacturing and supply-chain decisions.",
+            "Separates model judgment from deterministic validation, conflict detection, execution and read-back verification. Two human checkpoints protect routing and execution.",
+            "900 passing tests reported; 10/45 held-out runs passed every hard gate after a grader audit. Synthetic validation is documented alongside the remaining deployment gaps."
+        ],
+        "tags": [
+            "Python",
+            "LangGraph",
+            "FastAPI",
+            "Postgres",
+            "ERPNext",
+            "pytest / Playwright"
+        ],
+        "url": "",
+        "caseStudy": {
+            "intro": "A manufacturing planner might ask: “The CNC line is overloaded and a supplier is late. What should we change?” Answering that means looking across schedules, inventory and orders, and getting the changes right. I built this platform to help a planner work through those decisions, review the proposed plan and check that the approved changes actually reached the ERP.",
+            "sections": [
                 {
-                    "heading": "What I fixed"
-                },
-                "I diagnosed every failure before changing code:",
-                {
-                    "items": [
-                        "**Tools return derived values.** Shortfalls, coverage, cost deltas and data age now come from tools, so the model chooses and explains but never computes.",
-                        "**A runtime provenance check runs before the human gate, in production as well as in evals.** An untraceable number sends the plan back to the model once. If it’s still untraceable, the approver sees a warning.",
-                        "**Code guards.** One refuses to clear a shipment that matches the sanctions list. Another refuses a stock transfer larger than the actual shortfall, and the model has to resize it.",
-                        "**Bug fixes.** A logging bug that recorded correct decisions as wrong, a missing tool field, a mislabeled audit record, and the agent not being told today’s date."
+                    "title": "From a request to a reviewed plan",
+                    "paragraphs": [
+                        "A request like that rarely maps to one decision. Balancing the CNC line and responding to a late part may need different information, and their plans may affect each other. The first job is to work out what the person is asking for, before spending time solving the wrong problem.",
+                        "I use an orchestrator to break the request into up to five tasks and identify which ones depend on others. A person reviews that split first. They can edit it, ask for a revision or reject it. Only after approval do the individual use-case agents start working.",
+                        "Each agent gathers the relevant ERP data, develops options and brings a plan back for review. Before those plans reach the reviewer, code checks whether they clash—for example, whether two plans are trying to use the same stock or work-center capacity. The person can approve or revise each part separately, so one problem does not have to hold up everything else.",
+                        "Once approved, the parts run in dependency order. Code carries out the supported ERP writes and reads the records back to check the result. For actions that still need a person, the run pauses and waits for them. That distinction matters: proposing a useful plan and proving that it happened are two different jobs."
                     ]
                 },
-                "Before paying for the full run, I ran a small dev check. For $0.71, it caught a missing database migration, a guard the model was ignoring, and an audit-trail mislabel, all of which would have quietly corrupted the larger run.",
                 {
-                    "heading": "Clean evaluation: 60% on fresh scenarios"
-                },
-                "The second evaluation used 45 fresh scenarios, 9 per use case, with no overlap with development or first-evaluation data under the ID-blind check. It was weighted toward the hardest cases: three traps and three close calls per use case. The grader stayed frozen, and its file hashes were verified before and after every phase.",
-                "**27 of 45 runs passed every gate (60%; 95% CI 45.5–73.0%), up from 22%.** The agents chose the correct action in 35 of 45 (78%). Failures from fabricated numbers dropped from 20 to 0.",
-                {
-                    "table": true
-                },
-                "The safety layers did real work. The transfer guard blocked 14 oversized moves, the sanctions guard stopped a clear on a sanctions hit, and the model caught the other five sanctions hits on its own.",
-                {
-                    "heading": "What’s still failing, and what I learned"
+                    "title": "Keeping the moving parts manageable",
+                    "paragraphs": [
+                        "I initially considered adding a layer of domain specialists between the orchestrator and the use-case agents. But those specialists mostly repeated the routing work. With 36 decisions in the catalog, one orchestrator could see the whole catalog in a single prompt. Two layers were enough.",
+                        "I also wanted a simple request and a compound request to follow the same path. A request with one task is just a smaller version of a request with several. That keeps routing, approval and evaluation consistent instead of giving me two systems to maintain.",
+                        "Underneath that flow, the API accepts the request and saves it to Postgres. Separate workers pick up the jobs and run the agents. A model call or a wait for human approval therefore does not need to keep an API request open. Postgres holds the queue, paused graph state, approvals and audit history, keeping the coordination close to the records it protects.",
+                        "The same approach shaped smaller choices. Compliance search only needed roughly 120 cited regulation chunks, so I used TF-IDF retrieval rather than adding a vector database. And when execution fails halfway through, the system stops for human recovery. Automatically undoing an ERP change could be worse if someone has already acted on it."
+                    ]
                 },
                 {
-                    "items": [
-                        "**Most remaining failures are wrong decisions (8) and missed required warnings.** Lateral stock transfer kept omitting the residual-risk flag even when it sized the move correctly.",
-                        "**The runtime provenance check is too noisy.** Of the 10 distinct numbers it flagged, 9 were false positives: fragments of IDs and dates, and range dashes read as minus signs. Only one was a real inaccuracy. It never blocks, so it costs only an extra revision, but tighter number parsing is next.",
-                        "**Three runs were marked failures by grader false positives,** the year inside a date and a fragment of a warehouse ID. I kept them as failures rather than change a frozen grader after seeing results."
+                    "title": "What happens when a run has to wait?",
+                    "paragraphs": [
+                        "A demo can run from start to finish in one sitting. A real approval might sit for days. By the time someone returns to it, a worker may have restarted, the ERP data may have changed, or I may have deployed new code. I needed a paused run to survive those interruptions without quietly changing what it meant.",
+                        "Each use-case agent follows a LangGraph workflow: detect the use case, assemble the data, develop options, ask for approval, then act. The model works inside the options step. At a human gate, LangGraph saves a checkpoint to Postgres; a worker can later resume it with the person’s decision.",
+                        "Saving the graph is only part of the problem. Two workers must not pick up the same job, and two approvals must not race into contradictory actions. Workers claim jobs using SKIP LOCKED and renew a heartbeat lease while they work. A separate lock protects each graph thread, while approval decisions follow a first-decision-wins rule. Changing a decision is an explicit, audited action allowed only before execution.",
+                        "I also check what may have changed outside the run. Approvals can expire, shared resources are checked against other requests, and writes carry idempotency keys to prevent duplication on resume. Checkpoints record the code version and hashes of the prompts, rules and tools. If those no longer match, the run refuses to continue under different assumptions.",
+                        "These safeguards came from concrete failures. LangGraph silently dropped state fields I had not declared, including a verification result and a flag meant to limit retries. A pooled database connection could also retain an advisory lock after an exception. I added tests for undeclared state writes and a connection-reset hook that releases leftover locks."
+                    ]
+                },
+                {
+                    "title": "An approval is not proof of completion",
+                    "paragraphs": [
+                        "There is another pause that is easy to overlook: the wait for a person to do the work. Only four of the 36 catalog use cases have an executor that can carry out the approved ERP change automatically. For the others, clicking “approved” is still a long way from “finished.”",
+                        "I made the expected change explicit. Each plan has a proposed_writes contract identifying the record, field, old value and intended new value. Code reads the starting value from the ERP and checks it again before review, so the model cannot invent what was there or act on a stale premise.",
+                        "After the action, the verifier reads the ERP and compares the result with that contract. A person’s completion report is useful audit information, but it does not decide whether the write succeeded. If the outcome cannot be checked, it stays human_reported_unverified.",
+                        "Testing that distinction caught three partial, missing or incorrect human actions. It also exposed a shipment-screening path that released lines with unknown export classifications without compliance sign-off. Those were the kinds of failures I wanted the surrounding system to catch, even when the agent or reviewer sounded confident."
+                    ]
+                },
+                {
+                    "title": "How I tested whether the plans were any good",
+                    "paragraphs": [
+                        "Once the workflow could carry a request through approval and execution, I needed to know whether its decisions deserved approval in the first place. A fluent explanation was not enough. I wanted scenarios where I could work out the answer independently and compare the agent’s choice against it.",
+                        "I built seeded synthetic generators for 35 runnable use cases. Each generator covers obvious decisions, close calls, edge cases, tempting traps and messy inputs. Some answers are computed independently; others are known because of how the scenario is constructed. A separate checker recomputes them from the raw data, and the agent never sees the answer key.",
+                        "The grader checks the decision, constraints, required warnings and traps. Certain failures override everything else: taking an unsafe action, falling for a trap or stating a number that cannot be traced to the inputs or a successful tool result. An LLM judge can comment on writing quality, but it does not decide whether a run passes.",
+                        "I tested the human interactions too. Scripted reviewers use the real approval path to approve, reject, revise, return late or report partially completed work. That lets me check whether the system handles the interaction correctly as well as whether its original plan was good.",
+                        "Across the five priority use cases, I built 109 development scenarios and ran two real-model evaluations, plus scripted human-review scenarios and a compound request through the app.",
+                        "**The bar is strict on purpose.** A run fails if it takes a trap, executes an unsafe action, misses a required warning, or states any number that can’t be traced to the inputs or a tool output. That applies even when the decision itself was right."
+                    ]
+                },
+                {
+                    "title": "First evaluation: right decisions, invented numbers",
+                    "paragraphs": [
+                        "The first real-model run passed 10 of 45 runs on every gate (22%). The model usually chose sensible actions, but it failed on numerical grounding: in 20 of the 35 failures, the main cause was the model stating a number it had calculated instead of one a tool gave it.",
+                        "Two audits came before any fix.",
+                        "**I audited the grader.** The first grader had passed only 2 of 45 runs. I traced all 305 fabrication flags back to the saved runs, and 248 were false positives: digits inside record IDs, display rounding, and arithmetic correctly derived from tool outputs. I fixed those cases without loosening the gates and kept the 57 genuine fabrications as regression tests. Rescoring produced the 10/45.",
+                        "**I audited the test set.** An ID-blind comparison, which ignores names, IDs and dates and compares the actual numbers and structure, showed that 44 of the 45 first-evaluation runs used problems that duplicated development scenarios under new labels. The first evaluation wasn’t truly held out. I fixed the generators so every seed produces a genuinely different problem, and confirmed that the old seeds still reproduce the old sets byte for byte.",
+                        {
+                            "heading": "What I fixed"
+                        },
+                        "I diagnosed every failure before changing code:",
+                        {
+                            "items": [
+                                "**Tools return derived values.** Shortfalls, coverage, cost deltas and data age now come from tools, so the model chooses and explains but never computes.",
+                                "**A runtime provenance check runs before the human gate, in production as well as in evals.** An untraceable number sends the plan back to the model once. If it’s still untraceable, the approver sees a warning.",
+                                "**Code guards.** One refuses to clear a shipment that matches the sanctions list. Another refuses a stock transfer larger than the actual shortfall, and the model has to resize it.",
+                                "**Bug fixes.** A logging bug that recorded correct decisions as wrong, a missing tool field, a mislabeled audit record, and the agent not being told today’s date."
+                            ]
+                        },
+                        "Before paying for the full run, I ran a small dev check. For $0.71, it caught a missing database migration, a guard the model was ignoring, and an audit-trail mislabel, all of which would have quietly corrupted the larger run.",
+                        {
+                            "heading": "Clean evaluation: 60% on fresh scenarios"
+                        },
+                        "The second evaluation used 45 fresh scenarios, 9 per use case, with no overlap with development or first-evaluation data under the ID-blind check. It was weighted toward the hardest cases: three traps and three close calls per use case. The grader stayed frozen, and its file hashes were verified before and after every phase.",
+                        "**27 of 45 runs passed every gate (60%; 95% CI 45.5–73.0%), up from 22%.** The agents chose the correct action in 35 of 45 (78%). Failures from fabricated numbers dropped from 20 to 0.",
+                        {
+                            "table": true
+                        },
+                        "The safety layers did real work. The transfer guard blocked 14 oversized moves, the sanctions guard stopped a clear on a sanctions hit, and the model caught the other five sanctions hits on its own.",
+                        {
+                            "heading": "What’s still failing, and what I learned"
+                        },
+                        {
+                            "items": [
+                                "**Most remaining failures are wrong decisions (8) and missed required warnings.** Lateral stock transfer kept omitting the residual-risk flag even when it sized the move correctly.",
+                                "**The runtime provenance check is too noisy.** Of the 10 distinct numbers it flagged, 9 were false positives: fragments of IDs and dates, and range dashes read as minus signs. Only one was a real inaccuracy. It never blocks, so it costs only an extra revision, but tighter number parsing is next.",
+                                "**Three runs were marked failures by grader false positives,** the year inside a date and a fragment of a warehouse ID. I kept them as failures rather than change a frozen grader after seeing results."
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "title": "Making the evaluation fit the budget",
+                    "paragraphs": [
+                        "Running everything repeatedly against a real model would have cost roughly $470 by my estimate. I had a $17 budget. I had to choose which runs would teach me the most, rather than treating more runs as automatically better evidence.",
+                        "I reserved paid runs for the five priority use cases and used independent checks plus stubbed-model smoke tests for the other 30, covering 621 scenario archetypes. Prompt caching reduced the cost of repeated context; a same-scenario comparison measured about 26% savings.",
+                        "The measured evaluation cost $9.46 across 55 runs. Agent runs cost roughly $0.12–$0.20 each, with a 49.3% cache hit rate. Median latency was 61 seconds and p95 was 103 seconds. These are measurements from that run, rather than estimates of what every future run will cost.",
+                        "To keep the budget enforceable, the harness records tokens for each call and checks them against run totals. It refuses to start a run that would exceed the cap and saves results as it goes, so an interrupted evaluation can resume without paying for completed work again."
+                    ]
+                },
+                {
+                    "title": "Bugs and lessons",
+                    "paragraphs": [
+                        "A pooled connection could retain an advisory lock after an exception. A pg_advisory_unlock_all() pool reset hook fixed it, with a control test demonstrating the blocked and unblocked cases. LangGraph also silently dropped undeclared state keys, losing verification results and a one-retry flag; a schema test now rejects undeclared node writes.",
+                        "One pause treated rejection as approval. A regression test now proves rejection ends every use case without an act step or write. Unit tests alone missed the dropped verification state and compliance release; persona tests through the production path exposed them.",
+                        "A real customer snapshot contained quality-management data and fully covered none of the 36 supply-chain workflows. The ERP path used seeded data. I reframed the system as simulation-validated and made customer-specific evaluation the onboarding gate."
+                    ]
+                },
+                {
+                    "title": "Current scope and next steps",
+                    "paragraphs": [
+                        "Five of 35 runnable use cases are gated in; the other 30 remain disabled with 31 build/data issues and 74 tool-error scenarios reported. Read-back verification covers five use cases, while conflict-resource declarations cover executors and a few others. The synthetic demo uses separate IDs, so it does not yet demonstrate cross-use-case collisions.",
+                        "Next priorities are tool-returned derived numbers, resolving lateral-transfer answer definitions, improving cycle-count judgment, growing held-out coverage, adding verifiers and resource declarations, and evaluating orchestrator split accuracy. A quality-management workflow could use roughly 15,700 real inspection outcomes.",
+                        "Customer field mapping and manufacturing/stock ERP data are still required. Secrets, TLS, backups, alerting and the deployment pipeline were outside this project’s scope."
+                    ]
+                },
+                {
+                    "title": "My role and tools",
+                    "paragraphs": [
+                        "I owned the architecture, human checkpoints, verification contract, concurrency guards, evaluation methodology and cost plan. Claude Code and Codex implemented most of the code under my test-first rules and review; I checked evidence and challenged completion claims.",
+                        "Stack: Python, LangGraph, FastAPI, Postgres (psycopg), Anthropic API with prompt caching, ERPNext, Docker via OrbStack, pytest and Playwright."
                     ]
                 }
-            ]
-        },
-        {
-            "title": "Making the evaluation fit the budget",
-            "paragraphs": [
-                "Running everything repeatedly against a real model would have cost roughly $470 by my estimate. I had a $17 budget. I had to choose which runs would teach me the most, rather than treating more runs as automatically better evidence.",
-                "I reserved paid runs for the five priority use cases and used independent checks plus stubbed-model smoke tests for the other 30, covering 621 scenario archetypes. Prompt caching reduced the cost of repeated context; a same-scenario comparison measured about 26% savings.",
-                "The measured evaluation cost $9.46 across 55 runs. Agent runs cost roughly $0.12–$0.20 each, with a 49.3% cache hit rate. Median latency was 61 seconds and p95 was 103 seconds. These are measurements from that run, rather than estimates of what every future run will cost.",
-                "To keep the budget enforceable, the harness records tokens for each call and checks them against run totals. It refuses to start a run that would exceed the cap and saves results as it goes, so an interrupted evaluation can resume without paying for completed work again."
-            ]
-        },
-        {
-            "title": "Bugs and lessons",
-            "paragraphs": [
-                "A pooled connection could retain an advisory lock after an exception. A pg_advisory_unlock_all() pool reset hook fixed it, with a control test demonstrating the blocked and unblocked cases. LangGraph also silently dropped undeclared state keys, losing verification results and a one-retry flag; a schema test now rejects undeclared node writes.",
-                "One pause treated rejection as approval. A regression test now proves rejection ends every use case without an act step or write. Unit tests alone missed the dropped verification state and compliance release; persona tests through the production path exposed them.",
-                "A real customer snapshot contained quality-management data and fully covered none of the 36 supply-chain workflows. The ERP path used seeded data. I reframed the system as simulation-validated and made customer-specific evaluation the onboarding gate."
-            ]
-        },
-        {
-            "title": "Current scope and next steps",
-            "paragraphs": [
-                "Five of 35 runnable use cases are gated in; the other 30 remain disabled with 31 build/data issues and 74 tool-error scenarios reported. Read-back verification covers five use cases, while conflict-resource declarations cover executors and a few others. The synthetic demo uses separate IDs, so it does not yet demonstrate cross-use-case collisions.",
-                "Next priorities are tool-returned derived numbers, resolving lateral-transfer answer definitions, improving cycle-count judgment, growing held-out coverage, adding verifiers and resource declarations, and evaluating orchestrator split accuracy. A quality-management workflow could use roughly 15,700 real inspection outcomes.",
-                "Customer field mapping and manufacturing/stock ERP data are still required. Secrets, TLS, backups, alerting and the deployment pipeline were outside this project’s scope."
-            ]
-        },
-        {
-            "title": "My role and tools",
-            "paragraphs": [
-                "I owned the architecture, human checkpoints, verification contract, concurrency guards, evaluation methodology and cost plan. Claude Code and Codex implemented most of the code under my test-first rules and review; I checked evidence and challenged completion claims.",
-                "Stack: Python, LangGraph, FastAPI, Postgres (psycopg), Anthropic API with prompt caching, ERPNext, Docker via OrbStack, pytest and Playwright."
+            ],
+            "results": [
+                [
+                    "Bottleneck load balancing",
+                    "1/9",
+                    "6/9",
+                    "78%",
+                    "$0.20"
+                ],
+                [
+                    "Late-part resequencing",
+                    "3/9",
+                    "5/9",
+                    "89%",
+                    "$0.15"
+                ],
+                [
+                    "Lateral stock transfer",
+                    "2/9",
+                    "4/9",
+                    "89%",
+                    "$0.18"
+                ],
+                [
+                    "Cycle-count triage",
+                    "1/9",
+                    "6/9",
+                    "67%",
+                    "$0.11"
+                ],
+                [
+                    "Shipment screening",
+                    "3/9",
+                    "6/9",
+                    "67%",
+                    "$0.21"
+                ],
+                [
+                    "Total",
+                    "10/45 (22%)",
+                    "27/45 (60%)",
+                    "35/45 (78%)",
+                    "$7.59 total"
+                ]
             ]
         }
-    ],
-    "results": [
-        [
-            "Bottleneck load balancing",
-            "1/9",
-            "6/9",
-            "78%",
-            "$0.20"
-        ],
-        [
-            "Late-part resequencing",
-            "3/9",
-            "5/9",
-            "89%",
-            "$0.15"
-        ],
-        [
-            "Lateral stock transfer",
-            "2/9",
-            "4/9",
-            "89%",
-            "$0.18"
-        ],
-        [
-            "Cycle-count triage",
-            "1/9",
-            "6/9",
-            "67%",
-            "$0.11"
-        ],
-        [
-            "Shipment screening",
-            "3/9",
-            "6/9",
-            "67%",
-            "$0.21"
-        ],
-        [
-            "Total",
-            "10/45 (22%)",
-            "27/45 (60%)",
-            "35/45 (78%)",
-            "$7.59 total"
-        ]
-    ]
-}
-},
+    },
     {
         "title": "Fused Multi-Head Attention CUDA Kernel",
         "period": "May 2026 – July 2026",
@@ -233,7 +233,30 @@ export const portfolio = {
             "WMMA",
             "Nsight Compute"
         ],
-        "url": ""
+        "url": "https://github.com/AkhilS234/CUDA_Kernel",
+        "slug": "cuda-kernel",
+        "summary": "Two FlashAttention CUDA kernels comparing hand-tuned tensor cores with compiler-managed tiling.",
+        "details": [
+            {
+                "title": "Two ways to build attention",
+                "paragraphs": [
+                    "I implemented the FlashAttention forward pass in two ways: a hand-tuned WMMA tensor-core kernel and a CUDA Tile C++ kernel where the compiler manages tiling and memory placement. Both use FP16 inputs with FP32 accumulation and are checked against PyTorch scaled dot-product attention."
+                ]
+            },
+            {
+                "title": "What the benchmarks showed",
+                "paragraphs": [
+                    "On an NVIDIA L4 at sequence length 2048, head dimension 128, eight heads and batch size two, the repository reports 9.45 ms for WMMA and 7.59 ms for CUDA Tile, compared with 822.9 ms for the unfused baseline and 3.06 ms for PyTorch SDPA. The custom kernels improve substantially on the naive implementation while remaining slower than the reference."
+                ]
+            },
+            {
+                "title": "Where the engineering went",
+                "paragraphs": [
+                    "The WMMA work involved shared-memory bank conflicts, occupancy tuning, warp-wide softmax reductions and grid-stride scheduling. The tile implementation shifted the challenge toward compiler behavior, launch configuration and correctness of the online-softmax computation.",
+                    "Correctness checks mattered throughout: unchecked CUDA launch failures, a missing attention-score scale and bugs in multi-head configurations could all produce misleading results. The repository includes the implementation, tests, benchmarks and a detailed debugging history."
+                ]
+            }
+        ]
     },
     {
         "title": "MedCLIP-TB: Contrastive Learning VLM for Identifying Tuberculosis in Chest Radiography",
@@ -248,7 +271,23 @@ export const portfolio = {
             "Contrastive learning",
             "Vision-language models"
         ],
-        "url": ""
+        "url": "",
+        "slug": "medclip-tb",
+        "summary": "A vision-language model pairing chest X-rays with radiology reports for zero-shot tuberculosis classification.",
+        "details": [
+            {
+                "title": "Model and approach",
+                "paragraphs": [
+                    "Built a CLIP-style vision-language model pairing a ResNet-18 image encoder with a DistilBERT text encoder, trained contrastively on chest X-rays and radiology reports for zero-shot TB classification without class labels"
+                ]
+            },
+            {
+                "title": "Reported results",
+                "paragraphs": [
+                    "Reached 94% accuracy (F1 0.94) on 800 radiographs and 79% Recall@10 on image-to-report retrieval"
+                ]
+            }
+        ]
     },
     {
         "title": "Financial News Sentiment Trading Backtester",
@@ -263,7 +302,42 @@ export const portfolio = {
             "FastAPI / Next.js",
             "NumPy"
         ],
-        "url": ""
+        "url": "https://github.com/AkhilS234/Finance-Portfolio-Project",
+        "slug": "finance-backtester",
+        "summary": "A financial-news sentiment platform for building signals, backtesting strategies and running paper trades.",
+        "details": [
+            {
+                "title": "From headlines to signals",
+                "paragraphs": [
+                    "The pipeline ingests ticker-level news from Yahoo Finance RSS, scores headlines with FinBERT and aggregates sentiment into daily signals. A FastAPI backend and Next.js dashboard expose the signals, backtests and paper-trading account."
+                ]
+            },
+            {
+                "title": "Testing a trading idea",
+                "paragraphs": [
+                    "The backtester supports equal-weighted long, short and market-neutral portfolios ranked by sentiment. The documented baseline uses a 48-hour news window ending at 4 PM ET, enters at the next trading day’s open and exits at that day’s close. Turnover-based transaction costs are included.",
+                    "The system reports equity curves, Sharpe ratio, drawdown, annualized return, volatility and turnover. Timing rules and point-in-time universe handling are central to checking whether a signal would have been available when a trade was made."
+                ]
+            },
+            {
+                "title": "Running the system",
+                "paragraphs": [
+                    "A SQLite-backed job queue handles backtests and pipeline runs outside API requests. APScheduler schedules daily updates, while the Alpaca integration optionally sends the resulting portfolio to a paper account. The repository contains setup instructions and the detailed backtest rules."
+                ]
+            }
+        ]
+    },
+    {
+        "title": "GHGPredictor",
+        "period": "Biomet.life · June – August 2025",
+        "summary": "Combines sustainability-report sentiment with historical company data to forecast emissions per vehicle.",
+        "page": "/experience/biomet",
+        "url": "https://github.com/AkhilS234/GHGPredictor",
+        "tags": [
+            "Python",
+            "scikit-learn",
+            "Flask"
+        ]
     }
 ]
 };
